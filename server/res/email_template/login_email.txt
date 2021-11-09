@@ -1,0 +1,8 @@
+Hi ${USER},
+
+It seems you are trying to login to your WUD account.
+This is the code: ${CODE}.
+
+For security reason this code will expire in 5 minutes.
+
+The WUD Team.

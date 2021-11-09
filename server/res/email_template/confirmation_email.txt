@@ -1,0 +1,7 @@
+Hi ${USER}, 
+
+This is the confirmation email for your WUD account.
+Click the following link to confirm your email:
+${URL} 
+
+The WUD team.
