@@ -1,5 +1,7 @@
+import json
 from firebase_admin.exceptions import FirebaseError
 from flask import request, Flask
+from flask.wrappers import Response
 from flask_cors import CORS, cross_origin
 from message import Message
 from db_driver import APIException, FirebaseConnection
@@ -41,6 +43,11 @@ INVALID_LOGIN = {
     "message": "Invalid email or password"
 }
 
+MISSING_AUTHORIZATION = {
+    "code": "missing_authorization",
+    "message": "Missing Authorization header containing the token"
+}
+
 app = Flask(__name__)
 cors = CORS(app)
 app.config["DEBUG"] = True
@@ -54,15 +61,19 @@ fb = FirebaseConnection(
 @app.route("/post_message", methods=["POST"])
 # Route per inviare un messaggio ad un utente.
 # Come body prende un json con i seguenti parametri:
-#   token  = token della persona che vuole inviare il messaggio
 #   dest   = id dell'utente a cui è destinato il messaggio
 #   msg    = il messaggio inviato
+# Come header accetta i seguenti parametri:
+#   Authorization  = token della persona che vuole inviare il messaggio
 # Il messaggio verrà messo tra i "pending_message" e potrà
 # essere preso solo quando il destinatario richiederà i
 # propri messaggi.
 @cross_origin()
 def post_message():
-    token = request.json["token"]
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        return Response(json.dumps(MISSING_AUTHORIZATION), status=400)
     dest = request.json["dest"]
     msg = request.json["msg"]
     try:
@@ -78,8 +89,9 @@ def post_message():
 
 @app.route("/get_message", methods=["POST"])
 # Route per leggere i messaggi ricevuti.
-# Come body prende un JSON con i seguenti parametri:
-#   token = token per la sicurezza
+# Come body la richiesta non prende nulla.
+# Come header la richiesta accetta i seguenti parametri:
+#   Authorization = token che identifica la sessione di un utente (vedere signin)
 # Verrà ritornato il messaggio con il seguente formato
 # {
 #   src: [src],
@@ -89,9 +101,10 @@ def post_message():
 @cross_origin()
 def get_message():
     print(request.json)
-    token = request.json[
-        "token"
-    ]  # token ancora da implementare, per ora sarà sostituito da un utente fisso
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        return Response(json.dumps(MISSING_AUTHORIZATION), status=400)
     try:
         user = User.get_user_by_token(fb, token)
         pending_messages = user.get_pending_messages(fb)
@@ -120,6 +133,7 @@ def signup():
     username = request.json["username"]
     email = request.json["email"]
     password = request.json["password"]
+    
     try:
         User.sign_up(fb, username, email, password)
         return {"code": "success", "message": "User created successfully"}
@@ -161,8 +175,9 @@ def signin():
 
 @app.route("/user/get", methods=["POST"])
 # Route per prendere i dati di un utente
-# Come body richiede un JSON con i seguenti parametri:
-#   token = token che identifica la sessione di un utente (vedere signin)
+# Come body la richiesta non prende nulla.
+# Come header la richiesta accetta i seguenti parametri:
+#   Authorization = token che identifica la sessione di un utente (vedere signin)
 # Verrà restituito un messaggio con il seguente formato
 # {
 #   code: "success",
@@ -174,7 +189,10 @@ def signin():
 # }
 @cross_origin()
 def get_user():
-    token = request.json["token"]
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        return Response(json.dumps(MISSING_AUTHORIZATION), status=400)
     try:
         user = User.get_user_by_token(fb, token)
         return {
