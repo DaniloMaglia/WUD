@@ -48,6 +48,11 @@ MISSING_AUTHORIZATION = {
     "message": "Missing Authorization header containing the token"
 }
 
+GENERAL_BAD_REQUEST = {
+    "code": "bad_request",
+    "message": "Bad Request, the server could not parse your data"
+}
+
 app = Flask(__name__)
 cors = CORS(app)
 app.config["DEBUG"] = True
@@ -129,9 +134,12 @@ def get_message():
 # }
 @cross_origin()
 def signup():
-    username = request.json["username"]
-    email = request.json["email"]
-    password = request.json["password"]
+    try:
+        username = request.json["username"]
+        email = request.json["email"]
+        password = request.json["password"]
+    except KeyError:
+        return Response(json.dumps(GENERAL_BAD_REQUEST), status=400)
     
     try:
         User.sign_up(fb, username, email, password)
@@ -157,8 +165,11 @@ def signup():
 # }
 @cross_origin()
 def signin():
-    email = request.json["email"]
-    password = request.json["password"]
+    try:
+        email = request.json["email"]
+        password = request.json["password"]
+    except KeyError:
+        return Response(json.dumps(GENERAL_BAD_REQUEST), status=400)
     try:
         token = User.sign_in(email, password)
         return {
@@ -217,7 +228,10 @@ def get_user():
 # }
 @cross_origin()
 def get_user_by_username():
-    username = request.args["username"]
+    try:
+        username = request.args["username"]
+    except KeyError:
+        return Response(json.dumps(GENERAL_BAD_REQUEST), status=400)
     try:
         user = User.get_user_by_username(fb, username)
         return {
