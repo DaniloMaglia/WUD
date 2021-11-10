@@ -87,7 +87,7 @@ def post_message():
         return INVALID_DEST
 
 
-@app.route("/get_message", methods=["POST"])
+@app.route("/get_message", methods=["GET"])
 # Route per leggere i messaggi ricevuti.
 # Come body la richiesta non prende nulla.
 # Come header la richiesta accetta i seguenti parametri:
@@ -100,7 +100,6 @@ def post_message():
 # In caso ci siano più messaggi verrà ritornata una lista.
 @cross_origin()
 def get_message():
-    print(request.json)
     try:
         token = request.headers["Authorization"]
     except KeyError:
@@ -173,7 +172,7 @@ def signin():
         return INVALID_LOGIN
 
 
-@app.route("/user/get", methods=["POST"])
+@app.route("/user/get", methods=["GET"])
 # Route per prendere i dati di un utente
 # Come body la richiesta non prende nulla.
 # Come header la richiesta accetta i seguenti parametri:
@@ -203,9 +202,9 @@ def get_user():
     except APIException:
         return INVALID_TOKEN
 
-@app.route("/user/get_by_username", methods=["POST"])
+@app.route("/user/get_by_username", methods=["GET"])
 # Route per prendere i dati di un utente
-# Come body richiede un JSON con i seguenti parametri:
+# Come body richiede i seguenti parametri:
 #   username = username dell'utente da cercare
 # Verrà restituito un messaggio con il seguente formato
 # {
@@ -218,7 +217,7 @@ def get_user():
 # }
 @cross_origin()
 def get_user_by_username():
-    username = request.json["username"]
+    username = request.args["username"]
     try:
         user = User.get_user_by_username(fb, username)
         return {
